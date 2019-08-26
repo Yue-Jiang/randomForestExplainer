@@ -77,6 +77,20 @@ min_depth_distribution.ranger <- function(forest){
   return(min_depth_frame)
 }
 
+#' @import dplyr
+#' @import reshape2
+#' @export
+min_depth_distribution.rfsrc <- function(forest){
+  max_sub_trees <- max.subtree(forest_rfsrc_class, max.order = 0)
+  min_depth_mtx <- max_sub_trees$order
+  min_depth_frame <- cbind(data.frame("variable"=rownames(min_depth_mtx)),
+                           as.data.frame(min_depth_mtx)) %>%
+    melt(id.vars = "variable", variable.name = "tree", value.name = "minimal_depth", na.rm = FALSE) %>%
+    mutate(tree=as.integer(gsub("^V", "", tree)))
+  min_depth_frame <- as.data.frame(min_depth_frame[!is.na(min_depth_frame$variable),])
+  return(min_depth_frame)
+}
+
 # Count the trees in which each variable had a given minimal depth
 min_depth_count <- function(min_depth_frame){
   tree <- NULL; minimal_depth <- NULL; variable <- NULL
@@ -143,7 +157,7 @@ plot_min_depth_distribution <- function(min_depth_frame, k = 10, min_no_of_trees
                                         mean_sample = "top_trees", mean_scale = FALSE, mean_round = 2,
                                         main = "Distribution of minimal depth and its mean"){
   minimal_depth <- NULL; mean_minimal_depth_label <- NULL; mean_minimal_depth <- NULL
-  if("randomForest" %in% class(min_depth_frame)){
+  if(any(c("randomForest", "ranger", "rfsrc") %in% class(min_depth_frame))){
     min_depth_frame <- min_depth_distribution(min_depth_frame)
   }
   min_depth_count_list <- min_depth_count(min_depth_frame)
